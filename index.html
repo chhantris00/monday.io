@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monday</title>
+<meta name="theme-color" content="#050b14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Monday">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap">
+<style>
+/* Layout: agenda | voice core + conversation | habits, planner, websites. One column on phones, core first. */
+:root {
+  color-scheme: dark;
+  --bg: #050b14; --panel: #08141f; --panel-2: #0b1c2b;
+  --line: #16445f; --line-soft: #0f2c40;
+  --ink: #dcf4ff; --muted: #8aa9bb;
+  --cyan: #5fd8ff; --cyan-dim: #2d83a6; --gold: #ffb84d; --red: #ff6b5e; --ok: #58f0b2;
+  --grid: rgba(95, 216, 255, 0.045); --glow: rgba(95, 216, 255, 0.35);
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --mono: "Share Tech Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+body.hib { --cyan: #a3a9ff; --cyan-dim: #5b5fa8; --line: #2a2d63; --line-soft: #1b1d42; --grid: rgba(163, 169, 255, 0.04); --glow: rgba(163, 169, 255, 0.3); --bg: #060612; --panel: #0a0a1c; --panel-2: #0e0e26; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; min-height: 100vh; min-height: 100dvh;
+  padding-inline: max(clamp(16px, 3vw, 32px), env(safe-area-inset-left), env(safe-area-inset-right));
+  padding-block: max(20px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-bottom));
+  color: var(--ink); font: 15px/1.5 var(--display);
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 30%, rgba(45, 131, 166, 0.16), transparent 70%),
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 32px 32px,
+    var(--bg);
+  background-color: var(--bg);
+  transition: background-color 0.6s ease;
+}
+.wrap { max-width: 1280px; margin-inline: auto; display: grid; gap: 18px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.top { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px 24px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.brand { display: grid; gap: 2px; min-width: 0; }
+.brand-name { font-weight: 700; font-size: clamp(20px, 3vw, 26px); letter-spacing: 0.32em; text-transform: uppercase; color: var(--cyan); text-shadow: 0 0 14px var(--glow); overflow-wrap: anywhere; }
+.brand-sub { font: 12px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere; }
+.clockbox { text-align: center; }
+.clock { font: clamp(30px, 5vw, 46px)/1 var(--mono); letter-spacing: 0.06em; text-shadow: 0 0 18px var(--glow); }
+.date { margin-top: 4px; font-size: 13px; letter-spacing: 0.08em; color: var(--muted); }
+.status { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px solid var(--line); background: var(--panel); font: 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.pill[data-s="ok"] i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.pill[data-s="warn"] i { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+.grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.core { order: -1; display: grid; gap: 14px; min-width: 0; }
+.stack { display: grid; gap: 16px; min-width: 0; }
+@media (min-width: 1000px) { .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr); } .core { order: 0; } }
+body.hib .nohib { display: none; }
+
+.panel { position: relative; min-width: 0; padding: 18px; border: 1px solid var(--line); background: linear-gradient(180deg, var(--panel-2), var(--panel)); }
+.panel::before, .panel::after { content: ""; position: absolute; width: 12px; height: 12px; border: 2px solid var(--cyan); pointer-events: none; }
+.panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.panel::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.p-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.p-head h2, details.panel > summary h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); }
+.count { font-size: 13px; color: var(--muted); }
+details.panel > summary { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; list-style: none; cursor: pointer; }
+details.panel > summary::-webkit-details-marker { display: none; }
+details.panel[open] > summary { margin-bottom: 14px; }
+
+.add { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+input[type="text"], input[type="password"], input[type="time"], input[type="datetime-local"], select, textarea {
+  min-width: 0; padding: 9px 11px; border: 1px solid var(--line); background: rgba(5, 11, 20, 0.7); color: var(--ink); font: 14px var(--display); border-radius: 2px;
+}
+textarea { width: 100%; resize: vertical; min-height: 80px; line-height: 1.4; }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 0; border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan), 0 0 14px var(--glow); }
+.add input[type="text"] { flex: 1 1 140px; }
+.add input[type="time"], .add input[type="datetime-local"] { font-family: var(--mono); }
+.btn { padding: 9px 16px; border: 1px solid var(--cyan); background: rgba(95, 216, 255, 0.1); color: var(--cyan); font: 600 12px var(--display); letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; border-radius: 2px; }
+.btn:hover { background: rgba(95, 216, 255, 0.22); }
+.btn.gold { border-color: var(--gold); color: var(--gold); background: rgba(255, 184, 77, 0.1); }
+.btn.sm { padding: 5px 10px; font-size: 11px; letter-spacing: 0.12em; }
+.btn[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: rgba(255, 184, 77, 0.12); }
+.link { padding: 0; border: 0; background: none; color: var(--cyan); font: inherit; text-decoration: underline; cursor: pointer; }
+a.btn { display: inline-block; text-decoration: none; }
+
+ul.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 460px; overflow-y: auto; }
+.task, .habit { display: grid; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--line-soft); background: rgba(5, 11, 20, 0.45); }
+.task { grid-template-columns: 22px 50px minmax(0, 1fr) 24px; }
+.habit { grid-template-columns: 22px minmax(0, 1fr) auto 24px; }
+.task.next { border-color: var(--gold); box-shadow: inset 3px 0 0 var(--gold); }
+.t-time { font: 13px var(--mono); color: var(--cyan); }
+.task.late .t-time { color: var(--red); }
+.task.next .t-time { color: var(--gold); }
+.t-text { min-width: 0; overflow-wrap: anywhere; }
+.task.done .t-text { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--cyan-dim); }
+.task.done .t-time { color: var(--muted); }
+.tag { margin-left: 8px; font: 10px var(--mono); font-style: normal; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); }
+.empty { padding: 14px 10px; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); }
+.note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.chk { position: relative; width: 22px; height: 22px; padding: 0; border: 1.5px solid var(--cyan-dim); background: transparent; border-radius: 3px; cursor: pointer; }
+.chk:hover { border-color: var(--cyan); }
+.chk[aria-pressed="true"] { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px var(--glow); }
+.chk[aria-pressed="true"]::after { content: ""; position: absolute; left: 6px; top: 2px; width: 6px; height: 11px; border: solid var(--bg); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.x { width: 24px; height: 24px; padding: 0; border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; border-radius: 2px; }
+.x:hover { color: var(--red); }
+.h-main { display: grid; min-width: 0; }
+.h-name { overflow-wrap: anywhere; }
+.h-streak { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.dots { display: flex; gap: 3px; }
+.dot { width: 8px; height: 14px; background: var(--line-soft); }
+.dot.on { background: var(--cyan); box-shadow: 0 0 6px var(--glow); }
+.dot.now { outline: 1px solid var(--cyan-dim); outline-offset: 1px; }
+
+.item { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--line-soft); background: rgba(5, 11, 20, 0.45); }
+.item.done { opacity: 0.55; }
+.item-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.item-top b { color: var(--gold); font-weight: 400; }
+.item-text { margin: 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 7.5em; overflow: auto; }
+.item-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.meters { display: grid; gap: 14px; }
+.m-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.m-top .mono { color: var(--ink); letter-spacing: 0.04em; }
+.bar { height: 6px; background: var(--line-soft); }
+.bar i { display: block; height: 100%; width: 0; background: var(--cyan); box-shadow: 0 0 10px var(--glow); transition: width 0.6s ease; }
+.bar i.gold { background: var(--gold); box-shadow: 0 0 10px rgba(255, 184, 77, 0.4); }
+
+.orb { display: grid; justify-items: center; gap: 6px; }
+.orb-svg { width: min(250px, 56vw); height: auto; filter: drop-shadow(0 0 20px var(--glow)); overflow: visible; transition: filter 0.6s ease; }
+body.hib .orb-svg { filter: hue-rotate(60deg) saturate(0.55) brightness(0.8) drop-shadow(0 0 16px var(--glow)); }
+.ring { transform-box: view-box; transform-origin: 50% 50%; animation: spin var(--d) linear infinite; }
+.ring.rev { animation-direction: reverse; }
+body.hib .ring { animation-duration: 240s; }
+.glow { transform-box: view-box; transform-origin: 50% 50%; animation: pulse 3.2s ease-in-out infinite; }
+body.hib .glow { animation-duration: 7s; }
+.orb[data-phase="listen"] .glow { animation-duration: 1.6s; }
+.orb[data-phase="think"] .ring { animation-duration: calc(var(--d) / 6); }
+.orb[data-phase="speak"] .glow { animation-duration: 0.7s; }
+.g-a { stop-color: #fff; stop-opacity: 0.95; } .g-b { stop-color: var(--cyan); stop-opacity: 0.85; } .g-c { stop-color: var(--cyan); stop-opacity: 0; }
+.orb[data-phase="listen"] .g-b { stop-color: var(--gold); }
+.orb-pct { font: 30px var(--mono); fill: var(--ink); text-anchor: middle; }
+.orb-cap { font: 9px var(--mono); letter-spacing: 3px; fill: var(--muted); text-anchor: middle; }
+.orb-label { font: 12px var(--mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.orb-label b { color: var(--cyan); font-weight: 400; }
+
+.mic { display: grid; justify-items: center; gap: 8px; }
+.mic-btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 28px; border: 1.5px solid var(--cyan); background: rgba(95, 216, 255, 0.1); color: var(--cyan); font: 700 13px var(--display); letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; border-radius: 999px; }
+.mic-btn:hover { background: rgba(95, 216, 255, 0.22); }
+.mic-btn[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: rgba(255, 184, 77, 0.12); box-shadow: 0 0 22px rgba(255, 184, 77, 0.3); }
+.mic-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+.mic-btn[aria-pressed="true"] .mic-dot { animation: blink 1.1s steps(2) infinite; }
+.heard { min-height: 24px; max-width: 100%; text-align: center; font-size: 15px; overflow-wrap: anywhere; }
+.heard.dim { color: var(--muted); }
+.hint { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
+.modes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+.modes select { max-width: 100%; }
+
+.nextup { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-left: 3px solid var(--gold); background: rgba(5, 11, 20, 0.55); }
+.nextup .lbl { font: 11px var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.n-text { min-width: 0; overflow-wrap: anywhere; }
+.n-in { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.log { display: flex; flex-direction: column; gap: 10px; min-height: 150px; max-height: min(44vh, 380px); overflow-y: auto; padding: 2px 4px 2px 0; -webkit-overflow-scrolling: touch; }
+.msg { display: grid; gap: 3px; max-width: 94%; min-width: 0; }
+.msg.user { align-self: flex-end; }
+.who { font: 11px var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.msg.user .who { text-align: right; }
+.msg p { margin: 0; padding: 8px 12px; white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid var(--line-soft); background: var(--panel-2); }
+.msg.ai p { border-left: 2px solid var(--cyan); }
+.msg.user p { border-right: 2px solid var(--gold); }
+.msg.sys p { border-color: var(--gold); color: var(--gold); font-size: 14px; }
+.typing::after { content: "\258D"; margin-left: 3px; color: var(--cyan); animation: blink 1s steps(2) infinite; }
+.talk { display: flex; gap: 8px; margin-top: 12px; }
+.talk input { flex: 1 1 auto; }
+
+.setup { display: grid; gap: 10px; }
+.setup h2 { margin: 0; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.setup p { margin: 0; font-size: 14px; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.row input { flex: 1 1 200px; }
+dialog { width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); padding: 0; overflow: auto; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6); }
+dialog.wide { width: min(900px, calc(100vw - 32px)); }
+dialog::backdrop { background: rgba(2, 6, 12, 0.7); }
+.dlg { display: grid; gap: 14px; padding: 20px; }
+.dlg h2 { margin: 0; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); }
+.dlg h3 { margin: 6px 0 0; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); }
+.field { display: grid; gap: 4px; }
+.field label, .check { font: 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.check input { accent-color: var(--cyan); width: 16px; height: 16px; }
+.field input[type="range"] { accent-color: var(--cyan); width: 100%; }
+.small { margin: 0; font-size: 12px; color: var(--muted); }
+.dlg-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.preview-frame { width: 100%; height: min(70vh, 640px); border: 1px solid var(--line); background: #fff; }
+.chips-list { display: grid; gap: 6px; }
+.chip-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px; border: 1px solid var(--line-soft); font-size: 13px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%, 100% { opacity: 0.75; transform: scale(0.96); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes blink { 50% { opacity: 0.2; } }
+@media (max-width: 720px) {
+  .top { grid-template-columns: minmax(0, 1fr); }
+  .clockbox { text-align: left; }
+  .status { justify-content: flex-start; }
+  .task { grid-template-columns: 22px 44px minmax(0, 1fr) 24px; gap: 8px; }
+  .habit { grid-template-columns: 22px minmax(0, 1fr) 24px; }
+  .habit .dots { grid-column: 2 / 3; grid-row: 2; }
+  .nextup { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .orb-svg { width: min(190px, 52vw); }
+  input[type="text"], input[type="password"], input[type="time"], input[type="datetime-local"], select, textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .ring, .glow, .typing::after, .mic-dot { animation: none !important; } .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="brand-name" id="brand">MONDAY</span>
+      <span class="brand-sub" id="brand-sub">Voice command console</span>
+    </div>
+    <div class="clockbox">
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="date" id="date">&nbsp;</div>
+    </div>
+    <div class="status">
+      <span class="pill" id="pill-ai" data-s="warn"><i></i><span>No API key</span></span>
+      <span class="pill" id="pill-mic" data-s="warn"><i></i><span>Mic off</span></span>
+      <button type="button" class="btn sm gold" id="install" hidden>Install app</button>
+      <button type="button" class="btn sm" id="open-settings">Settings</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel nohib" aria-labelledby="h-agenda">
+      <div class="p-head"><h2 id="h-agenda">Today's agenda</h2><span class="mono count" id="task-count">0/0</span></div>
+      <form class="add" id="task-form" autocomplete="off">
+        <label class="sr" for="task-text">New task</label>
+        <input id="task-text" type="text" maxlength="140" placeholder="Add a task" required>
+        <label class="sr" for="task-time">Time (optional)</label>
+        <input id="task-time" type="time">
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <ul class="list" id="tasks"></ul>
+      <p class="note" id="sample-note" hidden>These are sample entries. <button type="button" class="link" id="clear-samples">Clear samples</button></p>
+    </section>
+
+    <section class="core" aria-label="Assistant">
+      <div class="orb" id="orb" data-phase="idle">
+        <svg class="orb-svg" viewBox="0 0 240 240" role="img" aria-label="Assistant core showing today's task completion">
+          <defs><radialGradient id="coreGrad" cx="50%" cy="50%" r="50%"><stop offset="0" class="g-a"></stop><stop offset="0.35" class="g-b"></stop><stop offset="1" class="g-c"></stop></radialGradient></defs>
+          <g class="ring" style="--d:60s"><circle cx="120" cy="120" r="114" fill="none" stroke="#2d83a6" stroke-width="1" stroke-dasharray="2 6"></circle></g>
+          <g class="ring rev" style="--d:40s"><circle cx="120" cy="120" r="102" fill="none" stroke="#5fd8ff" stroke-opacity="0.6" stroke-width="7" pathLength="360" stroke-dasharray="1.2 4.8"></circle></g>
+          <g class="ring" style="--d:22s"><circle cx="120" cy="120" r="88" fill="none" stroke="#5fd8ff" stroke-width="2" pathLength="100" stroke-dasharray="26 7 10 7 20 30"></circle></g>
+          <circle cx="120" cy="120" r="72" fill="none" stroke="#0f2c40" stroke-width="1"></circle>
+          <circle cx="120" cy="120" r="64" fill="none" stroke="#0f2c40" stroke-width="5"></circle>
+          <circle id="ring-prog" cx="120" cy="120" r="64" fill="none" stroke="#ffb84d" stroke-width="5" pathLength="100" stroke-dasharray="0 100" transform="rotate(-90 120 120)"></circle>
+          <circle class="glow" cx="120" cy="120" r="52" fill="url(#coreGrad)"></circle>
+          <text class="orb-pct" x="120" y="127" id="orb-pct">--</text>
+          <text class="orb-cap" x="120" y="146" id="orb-cap">TODAY</text>
+        </svg>
+        <div class="orb-label"><b id="orb-name">MONDAY</b> &middot; <span id="orb-state">Standing by</span></div>
+      </div>
+
+      <section class="panel setup" id="setup" aria-labelledby="h-setup" hidden>
+        <h2 id="h-setup">Connect an AI key</h2>
+        <p id="setup-help"></p>
+        <form class="row" id="setup-form" autocomplete="off">
+          <label class="sr" for="setup-provider">Provider</label>
+          <select id="setup-provider"><option value="gemini">Google Gemini (free tier)</option><option value="anthropic">Anthropic Claude (paid)</option></select>
+          <label class="sr" for="setup-key">API key</label>
+          <input id="setup-key" type="password" placeholder="Paste your key" spellcheck="false" autocomplete="off" autocapitalize="off">
+          <button class="btn gold" type="submit">Connect</button>
+        </form>
+      </section>
+
+      <div class="mic">
+        <button type="button" class="mic-btn" id="mic-btn" aria-pressed="false"><span class="mic-dot"></span><span id="mic-label">Tap to talk</span></button>
+        <div class="heard dim" id="heard" aria-live="polite">Tap the button, then just talk.</div>
+        <div class="modes">
+          <label class="sr" for="pack">Skill pack</label>
+          <select id="pack"></select>
+          <button type="button" class="btn sm" id="project-btn">Project</button>
+          <button type="button" class="btn sm" id="hib-btn" aria-pressed="false">Hibernate</button>
+        </div>
+        <p class="hint" id="mic-hint">Say "hibernate" to work on your project only, and "wake up" to come back.</p>
+      </div>
+
+      <div class="nextup nohib"><span class="lbl">Next up</span><span class="n-text" id="n-text">Nothing timed yet</span><span class="mono n-in" id="n-in"></span></div>
+
+      <section class="panel" aria-label="Conversation">
+        <div class="log" id="log" aria-live="polite"></div>
+        <form class="talk" id="talk" autocomplete="off">
+          <label class="sr" for="say">Type a message</label>
+          <input id="say" type="text" maxlength="800" placeholder="Or type a message">
+          <button class="btn" type="submit" id="send">Send</button>
+        </form>
+      </section>
+    </section>
+
+    <aside class="stack">
+      <section class="panel nohib" aria-labelledby="h-habits">
+        <div class="p-head"><h2 id="h-habits">Daily habits</h2><span class="mono count" id="habit-count">0/0</span></div>
+        <form class="add" id="habit-form" autocomplete="off">
+          <label class="sr" for="habit-text">New habit</label>
+          <input id="habit-text" type="text" maxlength="60" placeholder="Add a habit" required>
+          <button class="btn" type="submit">Add</button>
+        </form>
+        <ul class="list" id="habits"></ul>
+      </section>
+
+      <details class="panel nohib" id="planner">
+        <summary><h2>Social media planner</h2><span class="mono count" id="draft-count">0</span></summary>
+        <form class="add" id="draft-form" autocomplete="off">
+          <label class="sr" for="draft-platform">Platform</label>
+          <select id="draft-platform"><option>Instagram</option><option>Facebook</option><option>X</option><option>LinkedIn</option><option>TikTok</option><option>YouTube</option><option>Other</option></select>
+          <label class="sr" for="draft-when">Post at (optional)</label>
+          <input id="draft-when" type="datetime-local">
+          <label class="sr" for="draft-text">Post text</label>
+          <textarea id="draft-text" maxlength="2000" placeholder="Write a post, or ask Monday to write one" required></textarea>
+          <button class="btn" type="submit">Save draft</button>
+        </form>
+        <ul class="list" id="drafts"></ul>
+        <p class="note">Monday writes and schedules your posts and reminds you when it is time. You tap Open to post, because each platform only allows posting from its own app unless you add its developer token.</p>
+      </details>
+
+      <details class="panel" id="sites-panel">
+        <summary><h2>Websites</h2><span class="mono count" id="site-count">0</span></summary>
+        <ul class="list" id="sites"></ul>
+        <p class="note" id="sites-note">Ask Monday to build a website, for example "make a one page website for my bakery". Each site is saved here for preview and download.</p>
+      </details>
+
+      <section class="panel nohib" aria-labelledby="h-status">
+        <div class="p-head"><h2 id="h-status">Status</h2></div>
+        <div class="meters">
+          <div><div class="m-top"><span>Day elapsed</span><span class="mono" id="m-day">0%</span></div><div class="bar"><i id="b-day"></i></div></div>
+          <div><div class="m-top"><span>Tasks done</span><span class="mono" id="m-tasks">0</span></div><div class="bar"><i class="gold" id="b-tasks"></i></div></div>
+          <div><div class="m-top"><span>Habits logged</span><span class="mono" id="m-habits">0</span></div><div class="bar"><i id="b-habits"></i></div></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<dialog id="settings" aria-labelledby="h-set">
+  <form class="dlg" id="settings-form" method="dialog">
+    <h2 id="h-set">Settings</h2>
+    <div class="field"><label for="set-provider">AI provider</label>
+      <select id="set-provider"><option value="gemini">Google Gemini (free tier)</option><option value="anthropic">Anthropic Claude (paid)</option><option value="custom">Other (OpenAI-compatible)</option></select></div>
+    <div class="field"><label for="set-key">API key for this provider</label><input id="set-key" type="password" placeholder="Paste your key" spellcheck="false" autocomplete="off" autocapitalize="off"></div>
+    <div class="field" id="model-wrap"><label for="set-model">Model</label><select id="set-model"></select></div>
+    <div id="custom-fields" hidden>
+      <div class="field"><label for="set-base">Provider web address</label><input id="set-base" type="text" inputmode="url" spellcheck="false" autocapitalize="off" placeholder="https://api.example.com/v1"></div>
+      <div class="field"><label for="set-cmodel">Model name</label><input id="set-cmodel" type="text" spellcheck="false" autocapitalize="off" placeholder="Model name from your provider"></div>
+      <p class="small">The provider must accept chat requests in the OpenAI format and allow requests from a web page. Groq and OpenRouter are examples that usually do; check their docs for the exact address.</p>
+    </div>
+    <div class="field"><label for="set-name">Assistant name</label><input id="set-name" type="text" maxlength="24"></div>
+    <div class="field"><label for="set-user">What should it call you?</label><input id="set-user" type="text" maxlength="24" placeholder="Your name or title"></div>
+    <div class="field"><label for="set-lang">Language you speak</label>
+      <select id="set-lang"><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="en-IN">English (India)</option><option value="hi-IN">Hindi</option><option value="ne-NP">Nepali</option></select></div>
+    <label class="check"><input id="set-speak" type="checkbox"> Speak replies aloud</label>
+    <div class="field"><label for="set-voice">Voice</label><select id="set-voice"><option value="">Automatic</option></select></div>
+    <div class="field"><label for="set-rate">Speech speed</label><input id="set-rate" type="range" min="0.8" max="1.3" step="0.05" value="1"></div>
+    <label class="check"><input id="set-ptt" type="checkbox"> Tap to talk (one phrase per tap, best on phones)</label>
+    <label class="check"><input id="set-wake" type="checkbox"> Only respond when I say its name</label>
+    <h3>Your own skill packs</h3>
+    <div class="chips-list" id="custom-list"></div>
+    <div class="field"><label for="cp-name">Pack name</label><input id="cp-name" type="text" maxlength="40" placeholder="For example: Shop manager"></div>
+    <div class="field"><label for="cp-text">What should it know and do?</label><textarea id="cp-text" maxlength="3000" placeholder="Describe the role, the rules and anything it should always remember."></textarea></div>
+    <div><button type="button" class="btn sm" id="cp-add">Add skill pack</button></div>
+    <h3>Install on your phone</h3>
+    <p class="small" id="install-help"></p>
+    <p class="small">Voice recognition sends your speech to your browser maker's servers, so it needs internet. Your keys, tasks, posts and websites are stored on this device only; what you say to Monday is sent to the AI provider you choose. Google may use free-tier Gemini prompts to improve its products, so keep private material for a paid plan.</p>
+    <div class="dlg-actions"><button type="button" class="btn" id="test-voice">Test voice</button><button type="submit" class="btn gold" value="close">Done</button></div>
+  </form>
+</dialog>
+
+<dialog id="project" aria-labelledby="h-proj">
+  <form class="dlg" id="project-form" method="dialog">
+    <h2 id="h-proj">Your project</h2>
+    <p class="small">In hibernation Monday works on this project only and politely refuses anything else. Everything you write here is shared with Claude to answer your questions.</p>
+    <div class="field"><label for="pj-name">Project name</label><input id="pj-name" type="text" maxlength="60" placeholder="For example: Bakery website"></div>
+    <div class="field"><label for="pj-goal">Goal</label><input id="pj-goal" type="text" maxlength="200" placeholder="What are you trying to achieve?"></div>
+    <div class="field"><label for="pj-notes">Notes and facts Monday should know</label><textarea id="pj-notes" maxlength="20000" style="min-height:160px" placeholder="Details, decisions, deadlines, names, links, requirements."></textarea></div>
+    <div class="dlg-actions"><button type="submit" class="btn" value="save">Save</button><button type="button" class="btn gold" id="pj-hib">Save and hibernate</button></div>
+  </form>
+</dialog>
+
+<dialog id="preview" class="wide" aria-labelledby="h-prev">
+  <div class="dlg">
+    <h2 id="h-prev">Website preview</h2>
+    <iframe class="preview-frame" id="preview-frame" title="Website preview" sandbox="allow-scripts allow-forms allow-popups"></iframe>
+    <div class="dlg-actions"><button type="button" class="btn" id="preview-close">Close</button></div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  var dstr = function (d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); };
+  var today = function () { return dstr(new Date()); };
+  var hhmm = function (t) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : ""; };
+  var mins = function (t) { var p = t.split(":"); return Number(p[0]) * 60 + Number(p[1]); };
+  var nowMins = function () { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+  var mkId = function () { return Math.random().toString(36).slice(2, 8); };
+  var reEsc = function (s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); };
+
+  /* ---------- Skill packs ---------- */
+  var SAFE = " Give general information, say clearly when a licensed professional or emergency service is needed, and never present yourself as a replacement for one.";
+  var PACKS = [
+    { id: "auto", name: "Auto: picks the right expert", p: "Work out which field the request belongs to and answer as a seasoned professional in that field. Ask one short question only when you truly cannot proceed." },
+    { id: "general", name: "Everyday helper", p: "Help with daily life: planning, decisions, reminders, quick facts, writing short messages and organising tasks." },
+    { id: "study", name: "Student and tutor", p: "Teach step by step. Explain simply first, then add depth. Check understanding with a quick question, build study plans, quiz the user and help with exam preparation." },
+    { id: "teacher", name: "Teacher and trainer", p: "Design lesson plans, activities, worksheets, rubrics and training sessions for a stated age group and time. Keep outputs ready to use." },
+    { id: "code", name: "Software developer", p: "Act as a senior engineer. Write clean, working code, explain trade-offs briefly, debug from error messages, review code for bugs and security, and suggest tests. Put code in plain text with correct indentation." },
+    { id: "web", name: "Website builder", p: "Build websites. When asked for a site, produce one complete self-contained HTML file with inline CSS and JavaScript, responsive on phones, accessible, with real copy instead of placeholder text, then call save_website. Ask for the business name and purpose only if missing." },
+    { id: "data", name: "Data and spreadsheets", p: "Help with spreadsheets, formulas, data cleaning, statistics, charts and reporting. Give exact formulas and steps for Excel and Google Sheets." },
+    { id: "business", name: "Business and startup", p: "Act as a business adviser: business models, pricing, plans, market research approach, operations, hiring and negotiation. Be practical, give numbers and next steps, and state assumptions." },
+    { id: "marketing", name: "Marketing and sales", p: "Act as a marketing and sales lead: positioning, ad copy, email sequences, funnels, outreach scripts, objection handling and campaign plans." },
+    { id: "social", name: "Social media manager", p: "Manage social media: content calendars, hooks, captions, hashtags, post ideas and replies tuned to each platform. When you write a post for the user, call save_post_draft with the platform and, if they gave a time, when to post, so it appears in their planner." },
+    { id: "writer", name: "Writer and editor", p: "Write and edit articles, stories, speeches, emails, resumes and reports in the user's voice. Match the requested tone and length, and tighten wording without changing meaning." },
+    { id: "design", name: "Designer and creative", p: "Help with visual and brand design: layouts, colour palettes, type pairings, logos concepts, posters, video scripts and creative briefs. Describe designs concretely." },
+    { id: "finance", name: "Money and accounting", p: "Help with budgeting, bookkeeping, invoices, taxes in general terms, saving and investing concepts and business finance. Show calculations." + SAFE },
+    { id: "legal", name: "Legal information", p: "Explain legal concepts, draft plain-language contracts and letters as starting templates, and outline typical steps for common situations. Laws differ by country, so ask where the user is when it matters." + SAFE },
+    { id: "health", name: "Health and fitness", p: "Share general health, nutrition, sleep, exercise and wellbeing information and build simple routines. Never diagnose or give medicine doses." + SAFE },
+    { id: "hr", name: "Careers and HR", p: "Help with job searches, resumes, interview practice, performance reviews, job descriptions, workplace conflicts and career plans." },
+    { id: "eng", name: "Engineering and science", p: "Solve engineering, maths, physics, chemistry and biology problems with clear steps, units and sanity checks. Explain the reasoning." },
+    { id: "trades", name: "Trades, farming and repairs", p: "Give practical guidance for repairs, construction, electrical and plumbing basics, farming, gardening and machinery. Put safety first and say when a licensed tradesperson is required." },
+    { id: "home", name: "Cooking and home", p: "Plan meals, give recipes with quantities and timings, shopping lists, cleaning routines and household organisation. Adapt to ingredients on hand." },
+    { id: "travel", name: "Travel and events", p: "Plan trips, itineraries, budgets, packing lists and events such as weddings and parties. Give day-by-day plans with times. Remind the user to check visa, price and opening-time details." },
+    { id: "lang", name: "Translator and languages", p: "Translate accurately, explain nuance and register, and teach languages with short practice exchanges. Give pronunciation hints when useful." }
+  ];
+  function allPacks() { return PACKS.concat(S.customPacks.map(function (c) { return { id: "c:" + c.id, name: c.name, p: c.p, custom: true }; })); }
+
+  /* ---------- State ---------- */
+  var LS = "monday-pwa-v1", LSS = "monday-pwa-sites-v1";
+  var coarse = !!(window.matchMedia && matchMedia("(pointer: coarse)").matches);
+  function defaults() {
+    var d = today();
+    return {
+      name: "Monday", user: "", provider: "gemini", keys: { anthropic: "", gemini: "", custom: "" },
+      models: { anthropic: "claude-haiku-5-5", gemini: "gemini-3.5-flash-lite", custom: "" }, base: "",
+      lang: "en-US", voiceName: "", rate: 1, speak: true, wake: false, ptt: coarse,
+      pack: "auto", hib: false, project: { name: "", goal: "", notes: "" }, customPacks: [], drafts: [],
+      tasks: [
+        { id: "s1", text: "Morning routine", time: "07:00", done: false, date: d, example: true },
+        { id: "s2", text: "Deep work block", time: "09:00", done: false, date: d, example: true },
+        { id: "s3", text: "Lunch away from the desk", time: "13:00", done: false, date: d, example: true },
+        { id: "s4", text: "Workout", time: "18:30", done: false, date: d, example: true },
+        { id: "s5", text: "Plan tomorrow", time: "22:00", done: false, date: d, example: true }
+      ],
+      habits: [
+        { id: "h1", name: "Drink 2 litres of water", log: {}, example: true },
+        { id: "h2", name: "Read for 20 minutes", log: {}, example: true },
+        { id: "h3", name: "Move for 30 minutes", log: {}, example: true }
+      ]
+    };
+  }
+  function load() {
+    var base = defaults();
+    try {
+      var raw = JSON.parse(localStorage.getItem(LS) || "null");
+      if (raw && typeof raw === "object") {
+        ["name", "user", "lang", "voiceName", "pack", "base"].forEach(function (k) { if (typeof raw[k] === "string") base[k] = raw[k]; });
+        if (["anthropic", "gemini", "custom"].indexOf(raw.provider) >= 0) base.provider = raw.provider;
+        if (raw.keys && typeof raw.keys === "object") ["anthropic", "gemini", "custom"].forEach(function (k) { if (typeof raw.keys[k] === "string") base.keys[k] = raw.keys[k]; });
+        if (raw.models && typeof raw.models === "object") ["anthropic", "gemini", "custom"].forEach(function (k) { if (typeof raw.models[k] === "string" && raw.models[k]) base.models[k] = raw.models[k]; });
+        if (typeof raw.key === "string" && raw.key && !base.keys.anthropic) { base.keys.anthropic = raw.key; if (!raw.provider) base.provider = "anthropic"; }
+        if (typeof raw.rate === "number") base.rate = raw.rate;
+        ["speak", "wake", "ptt", "hib"].forEach(function (k) { if (typeof raw[k] === "boolean") base[k] = raw[k]; });
+        if (raw.project && typeof raw.project === "object") ["name", "goal", "notes"].forEach(function (k) { if (typeof raw.project[k] === "string") base.project[k] = raw.project[k]; });
+        if (Array.isArray(raw.customPacks)) base.customPacks = raw.customPacks.filter(function (c) { return c && typeof c.name === "string" && typeof c.p === "string"; }).map(function (c) { return { id: String(c.id || mkId()), name: c.name, p: c.p }; });
+        if (Array.isArray(raw.drafts)) base.drafts = raw.drafts.filter(function (d) { return d && typeof d.text === "string"; });
+        if (Array.isArray(raw.tasks)) base.tasks = raw.tasks.filter(function (t) { return t && typeof t.text === "string"; });
+        if (Array.isArray(raw.habits)) base.habits = raw.habits.filter(function (h) { return h && typeof h.name === "string"; }).map(function (h) { h.log = h.log && typeof h.log === "object" ? h.log : {}; return h; });
+      }
+    } catch (e) { /* use defaults */ }
+    if (!base.name.trim()) base.name = "Monday";
+    if (base.hib && !base.project.name) base.hib = false;
+    return base;
+  }
+  var S = load();
+  var PROVIDER_LABEL = { anthropic: "Claude", gemini: "Gemini", custom: "AI" };
+  var GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
+  function curKey() { return (S.keys[S.provider] || "").trim(); }
+  function curModel() { return S.models[S.provider] || ""; }
+  var SITES = [];
+  try { var rs = JSON.parse(localStorage.getItem(LSS) || "[]"); if (Array.isArray(rs)) SITES = rs.filter(function (x) { return x && typeof x.html === "string"; }); } catch (e) { /* none */ }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { /* storage unavailable */ } }
+  function saveSites() { try { localStorage.setItem(LSS, JSON.stringify(SITES)); return true; } catch (e) { return false; } }
+
+  /* ---------- Data helpers ---------- */
+  function visible() {
+    var t0 = today();
+    return S.tasks.map(function (t, i) { return { t: t, i: i }; })
+      .filter(function (x) { return !x.t.done || x.t.date === t0; })
+      .sort(function (a, b) { return (a.t.time ? mins(a.t.time) : 10000) + a.i / 1000 - ((b.t.time ? mins(b.t.time) : 10000) + b.i / 1000); })
+      .map(function (x) { return x.t; });
+  }
+  function nextTask(list) {
+    var now = nowMins(), t0 = today();
+    return (list || visible()).find(function (t) { return !t.done && t.time && t.date === t0 && mins(t.time) >= now; });
+  }
+  function streak(h) {
+    var d = new Date(); if (!h.log[dstr(d)]) d.setDate(d.getDate() - 1);
+    var n = 0; while (h.log[dstr(d)]) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  function dots(h) {
+    var s = "";
+    for (var k = 6; k >= 0; k--) { var d = new Date(); d.setDate(d.getDate() - k); var key = dstr(d); s += '<span class="dot' + (h.log[key] ? " on" : "") + (k === 0 ? " now" : "") + '"></span>'; }
+    return s;
+  }
+  function fmtWhen(w) {
+    if (!w) return "No time set";
+    var d = new Date(w); if (isNaN(d)) return "No time set";
+    return d.toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  var PLATFORM_URL = { instagram: "https://www.instagram.com/", facebook: "https://www.facebook.com/", x: "https://x.com/compose/post", twitter: "https://x.com/compose/post", linkedin: "https://www.linkedin.com/feed/", tiktok: "https://www.tiktok.com/upload", youtube: "https://studio.youtube.com/" };
+
+  /* ---------- Rendering ---------- */
+  var tasksEl = $("#tasks"), habitsEl = $("#habits"), draftsEl = $("#drafts"), sitesEl = $("#sites"), log = $("#log"), orb = $("#orb");
+
+  function render() {
+    var list = visible(), now = nowMins(), t0 = today(), nx = nextTask(list);
+    var done = list.filter(function (t) { return t.done; }).length;
+    tasksEl.innerHTML = list.length ? list.map(function (t) {
+      var carried = !t.done && t.date < t0;
+      var late = !t.done && (carried || (t.time && mins(t.time) < now));
+      var cls = (t.done ? " done" : "") + (late ? " late" : "") + (nx && nx.id === t.id ? " next" : "");
+      return '<li class="task' + cls + '" data-id="' + esc(t.id) + '">' +
+        '<button type="button" class="chk" data-act="toggle" aria-pressed="' + t.done + '" aria-label="Mark done: ' + esc(t.text) + '"></button>' +
+        '<span class="t-time">' + (t.time || "--:--") + '</span>' +
+        '<span class="t-text">' + esc(t.text) + (carried ? '<em class="tag">carried over</em>' : "") + '</span>' +
+        '<button type="button" class="x" data-act="del" aria-label="Delete task: ' + esc(t.text) + '">&times;</button></li>';
+    }).join("") : '<li class="empty">Nothing on the agenda. Add a task or tell ' + esc(S.name) + ' what is on your mind.</li>';
+    $("#task-count").textContent = done + "/" + list.length;
+
+    habitsEl.innerHTML = S.habits.length ? S.habits.map(function (h) {
+      var on = !!h.log[t0], n = streak(h);
+      return '<li class="habit" data-id="' + esc(h.id) + '">' +
+        '<button type="button" class="chk" data-act="hdone" aria-pressed="' + on + '" aria-label="Log today: ' + esc(h.name) + '"></button>' +
+        '<div class="h-main"><span class="h-name">' + esc(h.name) + '</span><span class="mono h-streak">Streak ' + n + (n === 1 ? " day" : " days") + '</span></div>' +
+        '<div class="dots" aria-hidden="true">' + dots(h) + '</div>' +
+        '<button type="button" class="x" data-act="hdel" aria-label="Delete habit: ' + esc(h.name) + '">&times;</button></li>';
+    }).join("") : '<li class="empty">No habits yet. Add one above.</li>';
+    var logged = S.habits.filter(function (h) { return h.log[t0]; }).length;
+    $("#habit-count").textContent = logged + "/" + S.habits.length;
+
+    draftsEl.innerHTML = S.drafts.length ? S.drafts.map(function (d) {
+      var url = PLATFORM_URL[String(d.platform || "").toLowerCase()];
+      return '<li class="item' + (d.done ? " done" : "") + '" data-id="' + esc(d.id) + '">' +
+        '<div class="item-top"><b>' + esc(d.platform || "Other") + '</b><span>' + esc(fmtWhen(d.when)) + '</span>' + (d.done ? "<span>Posted</span>" : "") + '</div>' +
+        '<p class="item-text">' + esc(d.text) + '</p>' +
+        '<div class="item-actions"><button type="button" class="btn sm" data-act="copy">Copy</button>' +
+        (url ? '<a class="btn sm" href="' + url + '" target="_blank" rel="noopener noreferrer">Open</a>' : "") +
+        '<button type="button" class="btn sm" data-act="posted">' + (d.done ? "Undo" : "Mark posted") + '</button>' +
+        '<button type="button" class="btn sm" data-act="deldraft">Delete</button></div></li>';
+    }).join("") : '<li class="empty">No drafts yet. Ask Monday for a post, or write one above.</li>';
+    $("#draft-count").textContent = String(S.drafts.filter(function (d) { return !d.done; }).length);
+
+    sitesEl.innerHTML = SITES.length ? SITES.map(function (s) {
+      return '<li class="item" data-id="' + esc(s.id) + '"><div class="item-top"><b>' + esc(s.name) + '</b><span>' + Math.max(1, Math.round(s.html.length / 1024)) + ' KB</span></div>' +
+        '<div class="item-actions"><button type="button" class="btn sm" data-act="preview">Preview</button><button type="button" class="btn sm" data-act="download">Download</button><button type="button" class="btn sm" data-act="delsite">Delete</button></div></li>';
+    }).join("") : '<li class="empty">No websites yet.</li>';
+    $("#site-count").textContent = String(SITES.length);
+
+    var tp = list.length ? Math.round(done / list.length * 100) : 0;
+    var hp = S.habits.length ? Math.round(logged / S.habits.length * 100) : 0;
+    var dp = Math.round(nowMins() / 14.4);
+    $("#m-day").textContent = dp + "%"; $("#b-day").style.width = dp + "%";
+    $("#m-tasks").textContent = done + " of " + list.length; $("#b-tasks").style.width = tp + "%";
+    $("#m-habits").textContent = logged + " of " + S.habits.length; $("#b-habits").style.width = hp + "%";
+    $("#ring-prog").setAttribute("stroke-dasharray", (S.hib ? 0 : tp) + " 100");
+    $("#orb-pct").textContent = S.hib ? "ZZZ" : (list.length ? tp + "%" : "--");
+    $("#orb-cap").textContent = S.hib ? "PROJECT" : "TODAY";
+
+    if (!nx) { $("#n-text").textContent = "Nothing else timed today"; $("#n-in").textContent = ""; }
+    else {
+      var diff = mins(nx.time) - now;
+      $("#n-text").textContent = nx.time + "  " + nx.text;
+      $("#n-in").textContent = diff <= 0 ? "now" : "in " + (diff < 60 ? diff + " min" : Math.floor(diff / 60) + " h " + (diff % 60) + " min");
+    }
+    $("#sample-note").hidden = !(S.tasks.some(function (t) { return t.example; }) || S.habits.some(function (h) { return h.example; }));
+    var nm = S.name.toUpperCase();
+    $("#brand").textContent = nm; $("#orb-name").textContent = nm; document.title = S.name;
+    $("#setup").hidden = !!curKey();
+    $("#pill-ai").dataset.s = curKey() ? "ok" : "warn";
+    $("#pill-ai").lastElementChild.textContent = curKey() ? PROVIDER_LABEL[S.provider] + " linked" : "No API key";
+    applyMode();
+  }
+  function commit() { save(); render(); }
+
+  function fillPacks() {
+    var sel = $("#pack");
+    sel.innerHTML = allPacks().map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + "</option>"; }).join("");
+    sel.value = S.pack; if (sel.value !== S.pack) { S.pack = "auto"; sel.value = "auto"; }
+    $("#custom-list").innerHTML = S.customPacks.length ? S.customPacks.map(function (c) { return '<div class="chip-row"><span>' + esc(c.name) + '</span><button type="button" class="x" data-cp="' + esc(c.id) + '" aria-label="Delete skill pack ' + esc(c.name) + '">&times;</button></div>'; }).join("") : '<p class="small">None yet.</p>';
+  }
+
+  function applyMode() {
+    document.body.classList.toggle("hib", S.hib);
+    var hb = $("#hib-btn"); hb.textContent = S.hib ? "Wake" : "Hibernate"; hb.setAttribute("aria-pressed", String(S.hib));
+    $("#brand-sub").textContent = S.hib ? "Hibernating: " + S.project.name : "Voice command console";
+    $("#pack").disabled = S.hib;
+    $("#mic-hint").textContent = S.hib ? "Hibernating: only your project. Say \"wake up\" to bring back every skill." : "Say \"hibernate\" to work on your project only, and \"wake up\" to come back.";
+    if (phase === "idle") $("#orb-state").textContent = S.hib ? "Hibernating" : "Standing by";
+    var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", S.hib ? "#060612" : "#050b14");
+  }
+
+  /* ---------- Clock and reminders ---------- */
+  var lastDay = today(), reminded = {};
+  function tick() {
+    var d = new Date();
+    $("#clock").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    $("#date").textContent = d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    var ds = dstr(d);
+    if (ds !== lastDay) { lastDay = ds; reminded = {}; render(); }
+    else if (d.getSeconds() === 0) render();
+    if (d.getSeconds() % 10 === 0 && !S.hib) {
+      var hm = pad(d.getHours()) + ":" + pad(d.getMinutes());
+      S.tasks.forEach(function (t) {
+        var k = "t" + t.id + hm;
+        if (!t.done && t.time === hm && t.date === ds && !reminded[k]) { reminded[k] = true; remind("Reminder: " + t.text + "."); }
+      });
+      S.drafts.forEach(function (p) {
+        var k = "d" + p.id;
+        if (!p.done && p.when === ds + "T" + hm && !reminded[k]) { reminded[k] = true; remind("Time to post to " + (p.platform || "social media") + ". The draft is in your planner."); }
+      });
+    }
+  }
+  function remind(msg) { addBubble("sys", msg); if (!busy && !sp.q) speakNow(msg); }
+
+  /* ---------- Chat log ---------- */
+  function addBubble(role, text) {
+    var el = document.createElement("div"); el.className = "msg " + role;
+    var who = document.createElement("span"); who.className = "who"; who.textContent = role === "user" ? (S.user || "You") : role === "sys" ? "System" : S.name;
+    var body = document.createElement("p"); body.textContent = text;
+    el.append(who, body); log.append(el); log.scrollTop = log.scrollHeight;
+    return body;
+  }
+  function heard(text, dim) { var h = $("#heard"); h.textContent = text; h.classList.toggle("dim", !!dim); }
+
+  var phase = "idle";
+  function setPhase(p) {
+    phase = p; orb.dataset.phase = p;
+    $("#orb-state").textContent = { idle: S.hib ? "Hibernating" : "Standing by", listen: "Listening", think: "Thinking", speak: "Speaking" }[p];
+  }
+  function micStatus(text, state) { var p = $("#pill-mic"); p.dataset.s = state; p.lastElementChild.textContent = text; }
+
+  /* ---------- Speech output ---------- */
+  var hasTTS = "speechSynthesis" in window;
+  var sp = { q: 0, gen: 0, done: true };
+  function pickVoice() {
+    if (!hasTTS) return null;
+    var vs = speechSynthesis.getVoices();
+    if (S.voiceName) { var m = vs.find(function (v) { return v.name === S.voiceName; }); if (m) return m; }
+    var lang = S.lang.toLowerCase(), base = lang.slice(0, 2);
+    var pool = vs.filter(function (v) { return v.lang.toLowerCase().replace("_", "-") === lang; });
+    if (!pool.length) pool = vs.filter(function (v) { return v.lang.toLowerCase().indexOf(base) === 0; });
+    if (!pool.length) return null;
+    return pool.find(function (v) { return /daniel|george|ryan|arthur|oliver|google uk english male/i.test(v.name); }) || pool[0];
+  }
+  function clean(t) { return t.replace(/[*_`#>]+/g, "").replace(/\s+/g, " ").trim(); }
+  function say(text) {
+    text = clean(text);
+    if (!text || !S.speak || !hasTTS) return;
+    var u = new SpeechSynthesisUtterance(text), v = pickVoice(), gen = sp.gen;
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = S.lang;
+    u.rate = S.rate; u.pitch = 0.95;
+    sp.q++; stopRec(); setPhase("speak");
+    var end = function () {
+      if (gen !== sp.gen) return;
+      sp.q = Math.max(0, sp.q - 1);
+      if (sp.q === 0 && sp.done) afterSpeech();
+    };
+    u.onend = end; u.onerror = end;
+    speechSynthesis.speak(u);
+  }
+  function speakNow(text) { sp.done = true; say(text); }
+  function cancelSpeech() { sp.gen++; sp.q = 0; if (hasTTS) { try { speechSynthesis.cancel(); } catch (e) { /* ignore */ } } }
+
+  /* ---------- Speech input ---------- */
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  var rec = null, recOn = false, listening = false, busy = false, abortCtl = null, fatalMic = false;
+
+  function startRec() {
+    if (!SR || !listening || busy || sp.q || recOn) return;
+    var r = new SR(), finalText = "";
+    rec = r; r.lang = S.lang; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    r.onstart = function () { recOn = true; setPhase("listen"); micStatus("Listening", "ok"); };
+    r.onresult = function (e) {
+      var interim = "";
+      for (var i = e.resultIndex; i < e.results.length; i++) {
+        var res = e.results[i];
+        if (res.isFinal) finalText += res[0].transcript; else interim += res[0].transcript;
+      }
+      heard(finalText + interim, !finalText);
+    };
+    r.onerror = function (e) {
+      var fatal = null;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") fatal = isIOS && standalone
+        ? "Voice input is blocked inside the installed iPhone app. Tap the microphone key on your keyboard to dictate instead, or open Monday in Safari for voice."
+        : "Microphone blocked. Allow the microphone for this site in your browser settings, then tap the button again.";
+      else if (e.error === "network") fatal = "Speech recognition could not reach its server. Check your internet connection and try again.";
+      else if (e.error === "audio-capture") fatal = "No microphone was found. Check that no other app is using it.";
+      if (fatal) { fatalMic = true; setListening(false); addBubble("sys", fatal); }
+    };
+    r.onend = function () {
+      recOn = false;
+      var t = finalText.trim();
+      if (t) { onHeard(t); return; }
+      if (!busy && !sp.q) setPhase("idle");
+      if (listening && !fatalMic && !busy && !sp.q) { if (S.ptt) { setListening(false); } else setTimeout(startRec, 250); }
+    };
+    try { r.start(); } catch (e) { recOn = false; }
+  }
+  function stopRec() {
+    if (rec) { rec.onend = rec.onresult = rec.onerror = rec.onstart = null; try { rec.abort(); } catch (e) { /* ignore */ } rec = null; }
+    recOn = false;
+  }
+  function setListening(on) {
+    listening = on;
+    var b = $("#mic-btn"); b.setAttribute("aria-pressed", String(on));
+    $("#mic-label").textContent = on ? (S.ptt ? "Listening..." : "Listening - tap to stop") : (S.ptt ? "Tap to talk" : "Start listening");
+    if (on) { fatalMic = false; if (!curKey()) addBubble("sys", "Add your API key first so I can think."); heard("Listening...", true); startRec(); }
+    else { stopRec(); micStatus("Mic off", "warn"); if (!busy && !sp.q) setPhase("idle"); }
+  }
+
+  function onHeard(text) {
+    var t = text.trim();
+    if (S.wake) {
+      var low = t.toLowerCase(), n = S.name.toLowerCase(), i = low.indexOf(n);
+      if (i < 0) { heard("Heard: " + t + " (say \"" + S.name + "\" first)", true); setPhase("idle"); if (listening) { if (S.ptt) setListening(false); else setTimeout(startRec, 250); } return; }
+      t = (t.slice(0, i) + " " + t.slice(i + n.length)).trim().replace(/^(hey|hi|hello|ok|okay)\b[\s,.!?]*/i, "").replace(/^[\s,.!?]+/, "");
+      if (!t) t = "Hello";
+    }
+    send(t);
+  }
+
+  /* ---------- Hibernation ---------- */
+  function localCommand(t) {
+    var low = t.toLowerCase().replace(/[.!?,]+$/g, "").trim();
+    low = low.replace(new RegExp("^(hey |ok |okay )?" + reEsc(S.name.toLowerCase()) + "[ ,]*"), "").replace(/^(hey |ok |okay |please )/, "");
+    if (low.length > 40) return null;
+    if (/^(hibernate|hibernation mode|project mode|go to sleep|sleep mode)$/.test(low)) return "hib";
+    if (/^(wake up|wake|wake up now|exit hibernation|leave project mode|come back)$/.test(low)) return "wake";
+    return null;
+  }
+  function localReply(userText, reply) {
+    stopRec(); cancelSpeech(); busy = true; sp.done = false; sp.q = 0;
+    addBubble("user", userText); addBubble("ai", reply); heard(userText, false);
+    sp.done = true; say(reply); if (!sp.q) afterSpeech();
+  }
+  function setHib(on, userText) {
+    if (on && !S.project.name.trim()) {
+      localReply(userText || "Hibernate", "Set up your project first, then I can hibernate on it.");
+      openProject(); return;
+    }
+    S.hib = on; commit();
+    localReply(userText || (on ? "Hibernate" : "Wake up"), on ? "Hibernating on " + S.project.name + ". I will work on this project only. Say wake up when you want me back." : "I am awake. All skills are back.");
+  }
+
+  /* ---------- Claude API ---------- */
+  var history = [];
+
+  function packPrompt() {
+    var p = allPacks().find(function (x) { return x.id === S.pack; }) || PACKS[0];
+    return "Active skill pack: " + p.name + ". " + p.p;
+  }
+  function system() {
+    var t0 = today(), now = new Date();
+    var data = { now: now.toLocaleString([], { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) };
+    var s = "You are " + S.name + ", a capable personal voice assistant with the calm, dry-witted manner of a sci-fi butler, working for the user across life and work. " +
+      (S.user ? "Address the user as \"" + S.user + "\". " : "") +
+      "Your replies may be spoken aloud, so begin with a short plain-language answer of one to three sentences. When the user asks for something long (an essay, code, a plan, a post, a table), give a one-sentence spoken summary first and then the full text; only the first part is read aloud while all of it stays on screen. Use plain text with no markdown symbols and no emoji. Reply in the language the user speaks. " +
+      "Be accurate, say so when you are unsure, and never invent facts, tasks or data. Use the tools to change the user's data when asked, then confirm in a few words, and never claim a change unless a tool call succeeded. Times are 24-hour HH:MM in the user's local time; say them naturally when speaking.\n\n";
+    if (S.hib) {
+      data.project = { name: S.project.name, goal: S.project.goal, notes: S.project.notes.slice(0, 20000) };
+      data.tasks = visible().map(function (t) { return { id: t.id, text: t.text, time: t.time || null, done: t.done }; });
+      s += "HIBERNATION MODE IS ON. You work only on the user's project \"" + S.project.name + "\". Everything outside it is out of scope: if asked about anything unrelated, reply briefly that you are hibernating on the project and that saying 'wake up' brings back all skills, then offer a project-related next step. Use the project notes as ground truth, record new decisions and facts with add_project_note, and keep a focused, quiet tone.\n\n";
+    } else {
+      data.tasks = visible().map(function (t) { return { id: t.id, text: t.text, time: t.time || null, done: t.done, carriedOver: !t.done && t.date < t0 }; });
+      data.habits = S.habits.map(function (h) { return { id: h.id, name: h.name, loggedToday: !!h.log[t0], streakDays: streak(h) }; });
+      data.pendingPosts = S.drafts.filter(function (d) { return !d.done; }).map(function (d) { return { id: d.id, platform: d.platform, when: d.when || null, preview: d.text.slice(0, 80) }; });
+      if (S.project.name) data.project = { name: S.project.name, goal: S.project.goal };
+      s += packPrompt() + " " + "When asked to plan the day, suggest a short schedule and add items only after the user agrees.\n\n";
+    }
+    if (noTools) s += "Tools are unavailable on this model: you cannot change the user's data, so say so and tell them to use the panels.\n\n";
+    return s + "Current data:\n" + JSON.stringify(data);
+  }
+
+  var T = {
+    add_task: { name: "add_task", description: "Add a task to today's agenda. Returns the new task id.", input_schema: { type: "object", properties: { text: { type: "string" }, time: { type: "string", description: "Optional 24-hour HH:MM" } }, required: ["text"] } },
+    complete_task: { name: "complete_task", description: "Mark a task done, or not done with done=false.", input_schema: { type: "object", properties: { id: { type: "string" }, done: { type: "boolean" } }, required: ["id"] } },
+    delete_task: { name: "delete_task", description: "Remove a task from the agenda.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+    add_habit: { name: "add_habit", description: "Add a new daily habit to track. Returns the new habit id.", input_schema: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } },
+    log_habit: { name: "log_habit", description: "Log a habit as done for today, or undo with done=false.", input_schema: { type: "object", properties: { id: { type: "string" }, done: { type: "boolean" } }, required: ["id"] } },
+    save_post_draft: { name: "save_post_draft", description: "Save a social media post to the user's planner. Put the finished post text, ready to publish, in text. Set when only if the user gave a date and time.", input_schema: { type: "object", properties: { platform: { type: "string", description: "Instagram, Facebook, X, LinkedIn, TikTok, YouTube or Other" }, text: { type: "string" }, when: { type: "string", description: "Optional local date and time as YYYY-MM-DDTHH:MM" } }, required: ["platform", "text"] } },
+    delete_post_draft: { name: "delete_post_draft", description: "Delete a saved social media draft by id.", input_schema: { type: "object", properties: { id: { type: "string" } }, required: ["id"] } },
+    save_website: { name: "save_website", description: "Save a complete website as one self-contained HTML document (inline CSS and JavaScript, mobile friendly). Saving again with the same name replaces it. The user can preview and download it.", input_schema: { type: "object", properties: { name: { type: "string" }, html: { type: "string", description: "The full HTML document starting with <!doctype html>" } }, required: ["name", "html"] } },
+    add_project_note: { name: "add_project_note", description: "Append a fact, decision or deadline to the user's project notes.", input_schema: { type: "object", properties: { note: { type: "string" } }, required: ["note"] } }
+  };
+  function toolsFor() {
+    var names = S.hib ? ["add_task", "complete_task", "delete_task", "add_project_note", "save_website"] : ["add_task", "complete_task", "delete_task", "add_habit", "log_habit", "save_post_draft", "delete_post_draft", "save_website"];
+    return names.map(function (n) { return T[n]; });
+  }
+
+  function runTool(name, i) {
+    i = i || {};
+    var task = function () { var t = S.tasks.find(function (x) { return x.id === String(i.id); }); if (!t) throw new Error("No task with that id"); return t; };
+    var habit = function () { var h = S.habits.find(function (x) { return x.id === String(i.id); }); if (!h) throw new Error("No habit with that id"); return h; };
+    var out;
+    if (name === "add_task") {
+      var text = String(i.text || "").trim().slice(0, 140); if (!text) throw new Error("text is required");
+      var t = { id: mkId(), text: text, time: hhmm(String(i.time || "")), done: false, date: today(), example: false };
+      S.tasks.push(t); out = "Added task " + t.id;
+    } else if (name === "complete_task") { var t2 = task(); t2.done = i.done !== false; out = t2.done ? "Marked done" : "Marked not done"; }
+    else if (name === "delete_task") { var t3 = task(); S.tasks = S.tasks.filter(function (x) { return x !== t3; }); out = "Deleted"; }
+    else if (name === "add_habit") {
+      var nm = String(i.name || "").trim().slice(0, 60); if (!nm) throw new Error("name is required");
+      var h = { id: mkId(), name: nm, log: {}, example: false }; S.habits.push(h); out = "Added habit " + h.id;
+    } else if (name === "log_habit") { var h2 = habit(); if (i.done === false) delete h2.log[today()]; else h2.log[today()] = true; out = "Habit updated"; }
+    else if (name === "save_post_draft") {
+      var pt = String(i.text || "").trim().slice(0, 2000); if (!pt) throw new Error("text is required");
+      var when = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(i.when || "")) ? String(i.when) : "";
+      var d = { id: mkId(), platform: String(i.platform || "Other").slice(0, 20), text: pt, when: when, done: false };
+      S.drafts.unshift(d); out = "Saved draft " + d.id;
+      $("#planner").open = true;
+    } else if (name === "delete_post_draft") { var before = S.drafts.length; S.drafts = S.drafts.filter(function (x) { return x.id !== String(i.id); }); if (S.drafts.length === before) throw new Error("No draft with that id"); out = "Deleted"; }
+    else if (name === "save_website") {
+      var sn = String(i.name || "").trim().slice(0, 60) || "Website", html = String(i.html || "");
+      if (html.length < 40 || html.indexOf("<") < 0) throw new Error("html must be a full HTML document");
+      var old = SITES.slice(), ex = SITES.find(function (x) { return x.name === sn; });
+      if (ex) { ex.html = html; ex.at = Date.now(); } else { SITES.unshift({ id: mkId(), name: sn, html: html, at: Date.now() }); SITES = SITES.slice(0, 12); }
+      if (!saveSites()) { SITES = old; throw new Error("Not enough storage on this device to save the website. Delete an old one first."); }
+      out = "Saved website " + sn; $("#sites-panel").open = true;
+    } else if (name === "add_project_note") {
+      var nt = String(i.note || "").trim().slice(0, 1000); if (!nt) throw new Error("note is required");
+      S.project.notes = (S.project.notes ? S.project.notes + "\n" : "") + "- " + nt; S.project.notes = S.project.notes.slice(-20000); out = "Note added";
+    } else throw new Error("Unknown tool");
+    commit(); return out;
+  }
+
+  function apiError(status, body) {
+    if (Array.isArray(body)) body = body[0];
+    var m = body && body.error && body.error.message ? String(body.error.message) : "";
+    if (status === 401 || /api key not valid|invalid api key|incorrect api key/i.test(m)) return "Your API key was rejected. Open Settings and paste it again.";
+    if (status === 403) return "This key is not allowed to use that model or service.";
+    if (status === 404) return "That model name was not found. Pick another model in Settings.";
+    if (status === 429) return S.provider === "gemini" ? "You reached the free usage limit for now. Wait a minute and try again, or come back later if it was the daily limit." : "Too many requests or your usage limit was reached. Wait a moment and try again.";
+    if (status === 529 || status >= 500) return "The AI service is busy right now. Try again in a moment.";
+    return "The request failed" + (m ? ": " + m.slice(0, 200) : ".");
+  }
+
+  var noTools = false;
+  async function streamOnce(messages, onText, signal) {
+    if (S.provider === "anthropic") return streamAnthropic(messages, onText, signal);
+    try { return await streamOpenAI(messages, onText, signal, !noTools); }
+    catch (e) {
+      if (e && e.api && e.status === 400 && !noTools) {
+        noTools = true;
+        addBubble("sys", "This model rejected tool use, so I can chat but cannot change your lists. Choose another model in Settings to get that back.");
+        return await streamOpenAI(messages, onText, signal, false);
+      }
+      throw e;
+    }
+  }
+
+  function toOpenAI(msgs) {
+    var out = [{ role: "system", content: system() }];
+    msgs.forEach(function (m) {
+      if (m.role === "user") {
+        if (typeof m.content === "string") out.push({ role: "user", content: m.content });
+        else m.content.forEach(function (b) { if (b.type === "tool_result") out.push({ role: "tool", tool_call_id: b.tool_use_id, content: String(b.content) }); });
+      } else {
+        var text = "", calls = [];
+        (Array.isArray(m.content) ? m.content : []).forEach(function (b) {
+          if (b.type === "text") text += b.text;
+          else if (b.type === "tool_use") { var c = { id: b.id, type: "function", function: { name: b.name, arguments: JSON.stringify(b.input || {}) } }; if (b.extra) c.extra_content = b.extra; calls.push(c); }
+        });
+        var am = { role: "assistant", content: text }; if (calls.length) am.tool_calls = calls; out.push(am);
+      }
+    });
+    return out;
+  }
+
+  /* OpenAI-style chat completions: Google Gemini's compatibility endpoint, or any other provider that speaks it. */
+  async function streamOpenAI(messages, onText, signal, useTools) {
+    var base = S.provider === "gemini" ? GEMINI_BASE : S.base.trim().replace(/\/+$/, "");
+    if (!base) throw { api: true, status: 0, message: "Open Settings and enter the web address of your AI provider." };
+    if (!curModel()) throw { api: true, status: 0, message: "Open Settings and enter a model name." };
+    var body = { model: curModel(), stream: true, max_tokens: 6000, messages: toOpenAI(messages) };
+    if (useTools) {
+      body.tools = toolsFor().map(function (t) { return { type: "function", function: { name: t.name, description: t.description, parameters: t.input_schema } }; });
+      body.tool_choice = "auto";
+    }
+    var res = await fetch(base + "/chat/completions", { method: "POST", signal: signal, headers: { "content-type": "application/json", authorization: "Bearer " + curKey() }, body: JSON.stringify(body) });
+    if (!res.ok) { var b = null; try { b = await res.json(); } catch (e) { /* no body */ } throw { api: true, status: res.status, message: apiError(res.status, b) }; }
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = "", text = "", calls = [], last = null;
+    for (;;) {
+      var chunk = await reader.read(); if (chunk.done) break;
+      buf += dec.decode(chunk.value, { stream: true });
+      var lines = buf.split("\n"); buf = lines.pop();
+      for (var li = 0; li < lines.length; li++) {
+        var ln = lines[li].trim();
+        if (ln.indexOf("data:") !== 0) continue;
+        var payload = ln.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        var ev; try { ev = JSON.parse(payload); } catch (e) { continue; }
+        if (ev.error) throw { api: true, status: 500, message: apiError(500, ev) };
+        var ch = ev.choices && ev.choices[0]; if (!ch) continue;
+        var d = ch.delta || {};
+        if (typeof d.content === "string" && d.content) { text += d.content; onText(d.content); }
+        (d.tool_calls || []).forEach(function (tc) {
+          var fn = tc.function || {};
+          if ((tc.id && (!last || tc.id !== last.id)) || (!tc.id && fn.name && (!last || last.name))) { last = { id: tc.id || ("call_" + mkId()), name: "", args: "", extra: null }; calls.push(last); }
+          else if (!last) { last = { id: "call_" + mkId(), name: "", args: "", extra: null }; calls.push(last); }
+          if (fn.name && !last.name) last.name = fn.name;
+          if (typeof fn.arguments === "string") last.args += fn.arguments; else if (fn.arguments && typeof fn.arguments === "object") last.args += JSON.stringify(fn.arguments);
+          if (tc.extra_content && !last.extra) last.extra = tc.extra_content;
+        });
+      }
+    }
+    var content = [];
+    if (text) content.push({ type: "text", text: text });
+    calls.forEach(function (c) {
+      if (!c.name) return;
+      var inp = {}; try { inp = c.args ? JSON.parse(c.args) : {}; } catch (e) { /* keep empty */ }
+      var blk = { type: "tool_use", id: c.id, name: c.name, input: inp }; if (c.extra) blk.extra = c.extra; content.push(blk);
+    });
+    return { content: content, stop: content.some(function (b) { return b.type === "tool_use"; }) ? "tool_use" : "end_turn" };
+  }
+
+  async function streamAnthropic(messages, onText, signal) {
+    var res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", signal: signal,
+      headers: { "content-type": "application/json", "x-api-key": curKey(), "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: curModel(), max_tokens: 6000, stream: true, system: system(), tools: toolsFor(), messages: messages })
+    });
+    if (!res.ok) { var b = null; try { b = await res.json(); } catch (e) { /* no body */ } throw { api: true, status: res.status, message: apiError(res.status, b) }; }
+    var reader = res.body.getReader(), dec = new TextDecoder(), buf = "", blocks = [], stop = null;
+    for (;;) {
+      var chunk = await reader.read(); if (chunk.done) break;
+      buf += dec.decode(chunk.value, { stream: true });
+      var parts = buf.split("\n\n"); buf = parts.pop();
+      for (var p = 0; p < parts.length; p++) {
+        var line = parts[p].split("\n").find(function (l) { return l.indexOf("data:") === 0; });
+        if (!line) continue;
+        var ev; try { ev = JSON.parse(line.slice(5)); } catch (e) { continue; }
+        if (ev.type === "content_block_start") { var cb = ev.content_block; blocks[ev.index] = cb.type === "tool_use" ? { type: "tool_use", id: cb.id, name: cb.name, json: "" } : { type: "text", text: "" }; }
+        else if (ev.type === "content_block_delta") {
+          var blk = blocks[ev.index]; if (!blk) continue;
+          if (ev.delta.type === "text_delta") { blk.text += ev.delta.text; onText(ev.delta.text); }
+          else if (ev.delta.type === "input_json_delta") blk.json += ev.delta.partial_json;
+        } else if (ev.type === "message_delta") { if (ev.delta && ev.delta.stop_reason) stop = ev.delta.stop_reason; }
+        else if (ev.type === "error") throw { api: true, message: apiError(500, ev) };
+      }
+    }
+    var content = [];
+    blocks.forEach(function (bk) {
+      if (!bk) return;
+      if (bk.type === "text") { if (bk.text) content.push({ type: "text", text: bk.text }); }
+      else { var inp = {}; try { inp = bk.json ? JSON.parse(bk.json) : {}; } catch (e) { /* keep empty */ } content.push({ type: "tool_use", id: bk.id, name: bk.name, input: inp }); }
+    });
+    return { content: content, stop: stop };
+  }
+
+  /* Keep long tool inputs (website code) out of the running history to save tokens. */
+  function slim(content) {
+    return content.map(function (b) {
+      if (b.type !== "tool_use") return b;
+      var inp = {}; Object.keys(b.input || {}).forEach(function (k) { var v = b.input[k]; inp[k] = typeof v === "string" && v.length > 1200 ? "[" + v.length + " characters saved]" : v; });
+      var nb = { type: "tool_use", id: b.id, name: b.name, input: inp }; if (b.extra) nb.extra = b.extra; return nb;
+    });
+  }
+  function trimHistory() {
+    var starts = [];
+    history.forEach(function (m, i) { if (m.role === "user" && typeof m.content === "string") starts.push(i); });
+    if (starts.length > 8) history = history.slice(starts[starts.length - 8]);
+  }
+
+  function makeSpeaker() {
+    var buf = "", spoken = 0, CAP = 420;
+    function out(s) { if (spoken >= CAP) return; spoken += s.length; say(s); }
+    return {
+      push: function (d) {
+        buf += d;
+        for (;;) {
+          var m = buf.match(/^[\s\S]*?([.!?…।]+|\n)(?=\s)/);
+          if (!m) break;
+          out(m[0]); buf = buf.slice(m[0].length);
+        }
+      },
+      flush: function () { if (buf.trim()) out(buf); buf = ""; }
+    };
+  }
+
+  async function send(text) {
+    text = String(text || "").trim();
+    if (busy || !text) return;
+    var cmd = localCommand(text);
+    if (cmd === "hib") { if (!S.hib) { setHib(true, text); return; } }
+    if (cmd === "wake") { if (S.hib) { setHib(false, text); return; } }
+    if (!curKey()) { addBubble("sys", "Add your API key in Settings first."); fillSettings(); $("#settings").showModal(); return; }
+    stopRec(); cancelSpeech();
+    busy = true; sp.done = false; sp.q = 0;
+    heard(text, false); addBubble("user", text);
+    var body = addBubble("ai", "..."); body.classList.add("typing");
+    setPhase("think"); micStatus(listening ? "Thinking" : "Mic off", listening ? "ok" : "warn");
+    abortCtl = new AbortController();
+    var shown = "", speaker = makeSpeaker(), mark = history.length;
+    history.push({ role: "user", content: text });
+    try {
+      for (var round = 0; round < 6; round++) {
+        var r = await streamOnce(history, function (d) {
+          shown += d; body.classList.remove("typing"); body.textContent = shown; log.scrollTop = log.scrollHeight; speaker.push(d);
+        }, abortCtl.signal);
+        if (r.content.length) history.push({ role: "assistant", content: slim(r.content) });
+        if (r.stop !== "tool_use") break;
+        var results = [];
+        r.content.forEach(function (b) {
+          if (b.type !== "tool_use") return;
+          try { results.push({ type: "tool_result", tool_use_id: b.id, content: String(runTool(b.name, b.input)) }); }
+          catch (e) { results.push({ type: "tool_result", tool_use_id: b.id, content: "Error: " + e.message, is_error: true }); }
+        });
+        history.push({ role: "user", content: results });
+        if (shown && !/\s$/.test(shown)) shown += "\n\n";
+      }
+      speaker.flush();
+      if (!shown.trim()) { body.classList.remove("typing"); body.textContent = "Done."; speaker.push("Done. "); speaker.flush(); }
+      trimHistory();
+    } catch (e) {
+      body.classList.remove("typing");
+      if (e && e.name === "AbortError") { body.textContent = shown.trim() || "Stopped."; }
+      else {
+        var msg = e && e.api ? e.message : "I could not reach the AI service. Check your internet connection and try again." + (S.provider === "custom" ? " If it keeps failing, this provider may not allow requests from a web page." : "");
+        body.textContent = (shown.trim() ? shown.trim() + "\n\n" : "") + msg;
+        if (!shown.trim()) { sp.done = true; say(msg); }
+      }
+      history = history.slice(0, mark);
+    } finally {
+      abortCtl = null; sp.done = true;
+      if (!sp.q) afterSpeech();
+    }
+  }
+
+  function afterSpeech() {
+    busy = false; sp.q = 0;
+    if (listening && S.ptt) { setListening(false); return; }
+    setPhase(listening && !fatalMic ? "listen" : "idle");
+    if (listening && !fatalMic) { heard("Listening...", true); setTimeout(startRec, 200); } else micStatus("Mic off", "warn");
+  }
+  function stopAll() {
+    if (abortCtl) abortCtl.abort();
+    cancelSpeech();
+    if (!abortCtl) { sp.done = true; afterSpeech(); }
+  }
+
+  /* ---------- Events ---------- */
+  $("#mic-btn").addEventListener("click", function () {
+    if (!SR) {
+      addBubble("sys", isIOS ? "Voice input is not available here. Open Monday in Safari, or tap the microphone key on your keyboard to dictate into the message box." : "This browser cannot listen. Open Monday in Google Chrome or Microsoft Edge.");
+      return;
+    }
+    if (busy || sp.q) { stopAll(); if (!listening) return; }
+    setListening(!listening);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.code !== "Space" || e.repeat) return;
+    if (document.querySelector("dialog[open]")) return;
+    if (/^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test((e.target.tagName || ""))) return;
+    e.preventDefault(); $("#mic-btn").click();
+  });
+  $("#talk").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("#say").value; $("#say").value = "";
+    if (busy) { stopAll(); return; }
+    send(v);
+  });
+  $("#task-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = $("#task-text").value.trim(); if (!text) return;
+    S.tasks.push({ id: mkId(), text: text.slice(0, 140), time: hhmm($("#task-time").value), done: false, date: today(), example: false });
+    $("#task-text").value = ""; $("#task-time").value = ""; commit(); $("#task-text").focus();
+  });
+  $("#habit-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var n = $("#habit-text").value.trim(); if (!n) return;
+    S.habits.push({ id: mkId(), name: n.slice(0, 60), log: {}, example: false });
+    $("#habit-text").value = ""; commit(); $("#habit-text").focus();
+  });
+  $("#draft-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t = $("#draft-text").value.trim(); if (!t) return;
+    S.drafts.unshift({ id: mkId(), platform: $("#draft-platform").value, text: t.slice(0, 2000), when: $("#draft-when").value || "", done: false });
+    $("#draft-text").value = ""; $("#draft-when").value = ""; commit();
+  });
+  tasksEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var t = S.tasks.find(function (x) { return x.id === b.closest("li").dataset.id; }); if (!t) return;
+    if (b.dataset.act === "toggle") t.done = !t.done; else S.tasks = S.tasks.filter(function (x) { return x !== t; });
+    commit();
+  });
+  habitsEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var h = S.habits.find(function (x) { return x.id === b.closest("li").dataset.id; }); if (!h) return;
+    if (b.dataset.act === "hdone") { if (h.log[today()]) delete h.log[today()]; else h.log[today()] = true; }
+    else S.habits = S.habits.filter(function (x) { return x !== h; });
+    commit();
+  });
+  function copyText(text, btn) {
+    var done = function () { var o = btn.textContent; btn.textContent = "Copied"; setTimeout(function () { btn.textContent = o; }, 1200); };
+    var fallback = function () { var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.append(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (x) { /* ignore */ } ta.remove(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  }
+  draftsEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var d = S.drafts.find(function (x) { return x.id === b.closest("li").dataset.id; }); if (!d) return;
+    if (b.dataset.act === "copy") { copyText(d.text, b); return; }
+    if (b.dataset.act === "posted") d.done = !d.done; else S.drafts = S.drafts.filter(function (x) { return x !== d; });
+    commit();
+  });
+  sitesEl.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-act]"); if (!b) return;
+    var s = SITES.find(function (x) { return x.id === b.closest("li").dataset.id; }); if (!s) return;
+    if (b.dataset.act === "preview") { $("#preview-frame").srcdoc = s.html; $("#preview").showModal(); }
+    else if (b.dataset.act === "download") {
+      var url = URL.createObjectURL(new Blob([s.html], { type: "text/html" })), a = document.createElement("a");
+      a.href = url; a.download = (s.name.replace(/[^\w\-]+/g, "-").toLowerCase() || "website") + ".html"; document.body.append(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    } else { SITES = SITES.filter(function (x) { return x !== s; }); saveSites(); render(); }
+  });
+  $("#preview-close").addEventListener("click", function () { $("#preview").close(); });
+  $("#preview").addEventListener("close", function () { $("#preview-frame").srcdoc = ""; });
+  $("#clear-samples").addEventListener("click", function () {
+    S.tasks = S.tasks.filter(function (t) { return !t.example; });
+    S.habits = S.habits.filter(function (h) { return !h.example; });
+    commit();
+  });
+  var SETUP_HELP = {
+    gemini: "Free option: go to aistudio.google.com, sign in with your Google account, choose Get API key and paste it here. The free tier has daily limits, and Google may use free-tier prompts to improve its products.",
+    anthropic: "Go to console.anthropic.com, create an API key and paste it here. Claude's API is paid, so add credit first."
+  };
+  function syncSetup() { var p = $("#setup-provider").value; $("#setup-help").textContent = SETUP_HELP[p] + " The key stays on this device."; }
+  $("#setup-provider").addEventListener("change", syncSetup);
+  $("#setup-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var k = $("#setup-key").value.trim(); if (!k) return;
+    S.provider = $("#setup-provider").value; S.keys[S.provider] = k; noTools = false;
+    $("#setup-key").value = ""; commit();
+    addBubble("ai", "Connected. Tap the button and say hello.");
+  });
+  $("#pack").addEventListener("change", function (e) { S.pack = e.target.value; save(); });
+  $("#hib-btn").addEventListener("click", function () { if (busy) stopAll(); setHib(!S.hib); });
+
+  /* ---------- Project dialog ---------- */
+  function openProject() {
+    $("#pj-name").value = S.project.name; $("#pj-goal").value = S.project.goal; $("#pj-notes").value = S.project.notes;
+    if (!$("#project").open) $("#project").showModal();
+  }
+  function saveProject() { S.project = { name: $("#pj-name").value.trim().slice(0, 60), goal: $("#pj-goal").value.trim().slice(0, 200), notes: $("#pj-notes").value.slice(0, 20000) }; if (!S.project.name) S.hib = false; commit(); }
+  $("#project-btn").addEventListener("click", openProject);
+  $("#project-form").addEventListener("submit", saveProject);
+  $("#pj-hib").addEventListener("click", function () {
+    saveProject(); $("#project").close();
+    if (S.project.name) setHib(true); else addBubble("sys", "Give the project a name first.");
+  });
+
+  /* ---------- Settings ---------- */
+  var dlg = $("#settings");
+  function fillVoices() {
+    if (!hasTTS) return;
+    var sel = $("#set-voice"), vs = speechSynthesis.getVoices().slice(), base = S.lang.slice(0, 2).toLowerCase();
+    vs.sort(function (a, b) { var ea = a.lang.toLowerCase().indexOf(base) === 0 ? 0 : 1, eb = b.lang.toLowerCase().indexOf(base) === 0 ? 0 : 1; return ea - eb || a.name.localeCompare(b.name); });
+    sel.innerHTML = '<option value="">Automatic</option>' + vs.map(function (v) { return '<option value="' + esc(v.name) + '">' + esc(v.name) + " (" + esc(v.lang) + ")</option>"; }).join("");
+    sel.value = S.voiceName || ""; if (sel.value !== (S.voiceName || "")) sel.value = "";
+  }
+  function installHelp() {
+    var t;
+    if (standalone) t = "Monday is installed on this device.";
+    else if (isIOS) t = "iPhone and iPad: open this page in Safari, tap the Share icon, then Add to Home Screen. Voice input works in Safari; in the installed app use your keyboard's microphone key to dictate.";
+    else if (/Android/i.test(navigator.userAgent)) t = "Android: open this page in Chrome, tap the menu with three dots, then Install app (or Add to Home screen). Voice input works in the installed app.";
+    else t = "Computer: in Chrome or Edge, click the install icon at the right end of the address bar.";
+    if (location.protocol === "file:") t += " Installing needs the page to be hosted on a web address, so follow the hosting steps that came with this file.";
+    $("#install-help").textContent = t;
+  }
+  var MODEL_OPTIONS = {
+    anthropic: [["claude-haiku-5-5", "Haiku 5.5 (fastest, best for talking)"], ["claude-sonnet-5-5", "Sonnet 5.5 (smarter, a bit slower)"]],
+    gemini: [["gemini-3.5-flash-lite", "Gemini 3.5 Flash-Lite (fastest, free tier)"], ["gemini-3.8-flash", "Gemini 3.8 Flash (smarter, free tier)"], ["gemini-3.6-flash", "Gemini 3.6 Flash (free tier)"]]
+  };
+  function fillProviderFields() {
+    var p = S.provider, custom = p === "custom";
+    $("#custom-fields").hidden = !custom; $("#model-wrap").hidden = custom;
+    $("#set-key").value = S.keys[p] || "";
+    if (!custom) {
+      $("#set-model").innerHTML = MODEL_OPTIONS[p].map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + "</option>"; }).join("");
+      var cur = S.models[p]; if (!MODEL_OPTIONS[p].some(function (o) { return o[0] === cur; })) cur = MODEL_OPTIONS[p][0][0];
+      S.models[p] = cur; $("#set-model").value = cur;
+    } else { $("#set-base").value = S.base; $("#set-cmodel").value = S.models.custom; }
+  }
+  function fillSettings() {
+    $("#set-provider").value = S.provider; fillProviderFields();
+    $("#set-name").value = S.name; $("#set-user").value = S.user;
+    $("#set-lang").value = S.lang; $("#set-speak").checked = S.speak; $("#set-rate").value = String(S.rate); $("#set-wake").checked = S.wake; $("#set-ptt").checked = S.ptt;
+    fillVoices(); fillPacks(); installHelp();
+  }
+  $("#open-settings").addEventListener("click", function () { fillSettings(); dlg.showModal(); });
+  $("#set-provider").addEventListener("change", function (e) { S.provider = e.target.value; noTools = false; fillProviderFields(); commit(); });
+  $("#set-key").addEventListener("change", function (e) { S.keys[S.provider] = e.target.value.trim(); noTools = false; commit(); });
+  $("#set-model").addEventListener("change", function (e) { S.models[S.provider] = e.target.value; noTools = false; save(); });
+  $("#set-base").addEventListener("change", function (e) { S.base = e.target.value.trim(); noTools = false; save(); });
+  $("#set-cmodel").addEventListener("change", function (e) { S.models.custom = e.target.value.trim(); noTools = false; save(); });
+  $("#set-name").addEventListener("input", function (e) { S.name = e.target.value.trim() || "Monday"; commit(); });
+  $("#set-user").addEventListener("input", function (e) { S.user = e.target.value.trim(); save(); });
+  $("#set-lang").addEventListener("change", function (e) { S.lang = e.target.value; S.voiceName = ""; save(); fillVoices(); });
+  $("#set-speak").addEventListener("change", function (e) { S.speak = e.target.checked; save(); if (!S.speak) cancelSpeech(); });
+  $("#set-voice").addEventListener("change", function (e) { S.voiceName = e.target.value; save(); speakNow("This is how I sound."); });
+  $("#set-rate").addEventListener("change", function (e) { S.rate = Number(e.target.value) || 1; save(); speakNow("This is how fast I speak."); });
+  $("#set-wake").addEventListener("change", function (e) { S.wake = e.target.checked; save(); });
+  $("#set-ptt").addEventListener("change", function (e) { S.ptt = e.target.checked; save(); if (!listening) $("#mic-label").textContent = S.ptt ? "Tap to talk" : "Start listening"; });
+  $("#cp-add").addEventListener("click", function () {
+    var n = $("#cp-name").value.trim(), t = $("#cp-text").value.trim();
+    if (!n || !t) return;
+    S.customPacks.push({ id: mkId(), name: n.slice(0, 40), p: t.slice(0, 3000) });
+    $("#cp-name").value = ""; $("#cp-text").value = ""; save(); fillPacks();
+  });
+  $("#custom-list").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cp]"); if (!b) return;
+    S.customPacks = S.customPacks.filter(function (c) { return c.id !== b.dataset.cp; });
+    if (S.pack === "c:" + b.dataset.cp) S.pack = "auto";
+    save(); fillPacks();
+  });
+  $("#test-voice").addEventListener("click", function () {
+    if (!hasTTS) { addBubble("sys", "This browser cannot speak."); return; }
+    var was = S.speak; S.speak = true; cancelSpeech(); speakNow("Voice online. All systems nominal."); S.speak = was;
+  });
+  dlg.addEventListener("close", function () { save(); });
+  if (hasTTS) speechSynthesis.onvoiceschanged = fillVoices;
+
+  /* ---------- Install and offline ---------- */
+  var deferred = null;
+  window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; $("#install").hidden = false; });
+  window.addEventListener("appinstalled", function () { deferred = null; $("#install").hidden = true; });
+  $("#install").addEventListener("click", async function () {
+    if (deferred) { deferred.prompt(); try { await deferred.userChoice; } catch (e) { /* ignore */ } deferred = null; $("#install").hidden = true; }
+    else addBubble("sys", "Open Safari's Share menu and choose Add to Home Screen to install Monday.");
+  });
+  if (isIOS && !standalone) $("#install").hidden = false;
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(function () { /* offline shell unavailable */ });
+
+  /* ---------- Boot ---------- */
+  fillPacks(); render(); tick(); setInterval(tick, 1000);
+  setPhase("idle"); applyMode();
+  $("#setup-provider").value = S.provider === "anthropic" ? "anthropic" : "gemini"; syncSetup();
+  $("#mic-label").textContent = S.ptt ? "Tap to talk" : "Start listening";
+  if (!SR) {
+    micStatus("No mic support", "warn");
+    if (isIOS) $("#mic-hint").textContent = "Voice input is limited on iPhone. Use Safari, or tap the microphone key on your keyboard to dictate.";
+    else $("#mic-hint").textContent = "This browser cannot listen. Use Google Chrome or Microsoft Edge.";
+  }
+  var h = new Date().getHours();
+  addBubble("ai", (h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening") + (S.user ? ", " + S.user : "") + ". " + (curKey() ? (S.hib ? "Hibernating on " + S.project.name + "." : "Tap the button and talk to me.") : "Paste an API key above to bring me online."));
+})();
+</script>
+</body>
+</html>

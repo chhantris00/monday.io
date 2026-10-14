@@ -1,0 +1,40 @@
+MONDAY - how to put it on your phone
+====================================
+
+Monday is a web app. To install it on Android or iPhone, it must be hosted at a
+web address (https). Hosting is free. Your API key is NOT inside these files; you
+type it in on each device and it stays on that device.
+
+STEP 1 - Put the files online (pick one, about 2 minutes)
+  A) Netlify Drop (easiest): on a computer, open app.netlify.com/drop, then drag
+     this whole unzipped "monday-app" folder onto the page. You get an address
+     like https://something.netlify.app
+  B) Cloudflare Pages or GitHub Pages: upload the folder as a new site.
+
+STEP 2 - Open the address on your phone and install
+  Android (Chrome): open the address, tap the menu (three dots), then
+     "Install app" or "Add to Home screen".
+  iPhone (Safari): open the address in Safari, tap the Share icon, then
+     "Add to Home Screen".
+
+STEP 3 - Connect it (free option)
+  1. Go to aistudio.google.com and sign in with your Google account.
+  2. Choose "Get API key", create a key and copy it.
+  3. Open Monday, leave "Google Gemini (free tier)" selected, paste the key,
+     press Connect, then tap the big button and talk.
+  The free tier has daily and per-minute limits. Google may use free-tier
+  prompts to improve its products, so keep private material for a paid plan.
+  If you have an Anthropic key instead, pick "Anthropic Claude" in the same box.
+  Settings also has "Other (OpenAI-compatible)" for providers such as Groq or
+  OpenRouter.
+
+VOICE NOTES
+  Android Chrome: voice input works, also in the installed app.
+  iPhone: voice input works in Safari. In the installed Home Screen app, Apple
+     blocks it, so use the microphone key on the iPhone keyboard to dictate.
+     Monday speaks its answers on both.
+
+PRIVACY
+  Anyone who knows your web address can open the page, but it is empty without
+  their own API key. Do not paste your key on a device you do not own.
+  Your key is not inside these files.
